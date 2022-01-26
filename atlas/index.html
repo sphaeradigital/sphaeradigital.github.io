@@ -1,0 +1,165 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<title>sphaera.digital</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<link rel="stylesheet" href="https://sphaera.digital/theme/css/main.css" />
+	<link rel="icon" type="image/png" href="https://sphaera.digital/theme/images/logo2.png" />
+	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+</head>
+
+<body class="homepage is-preload">
+	<div id="page-wrapper">
+
+		<!-- Header -->
+		<section id="header">
+
+			<!-- Logo -->
+			<h1>
+				<a href="/">
+					<img src="https://sphaera.digital/theme/images/logo2.png" alt="">
+					sphaera.digital
+				</a>
+			</h1>
+
+			<!-- Nav -->
+			<nav id="nav">
+				<ul>
+					<li ><a href="/">Home</a></li>
+					<li ><a href="/about/">About</a></li>
+					<li ><a href="/mint/">Mint</a></li>
+					<li  class="current" ><a href="/atlas/">Atlas</a></li>
+				</ul>
+			</nav>
+
+		</section>
+
+		<!-- Main -->
+		<section id="main">
+			<div class="container">
+
+	<div class="atlas">
+		<div id="map"></div>
+	</div>
+
+	<script src="/theme/js/map_coordinates.js"></script>
+	<script>
+		// initialize Leaflet
+		let map = L.map('map', {preferCanvas: true}).setView({lon: 0, lat: 0}, 2);
+
+		// add the OpenStreetMap tiles
+		L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+			maxZoom: 19,
+			minZoom: 2,
+			attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+		}).addTo(map);
+
+		// show the scale bar on the lower left corner
+		L.control.scale({imperial: true, metric: true}).addTo(map);
+
+		// show a marker on the map
+		for (const [token_id, coordinates] of Object.entries(mapCoordinates)) {
+			L.circleMarker(coordinates, {radius: 5})
+				// show popup with token id and coordinates
+				.bindPopup(`#${token_id} @ ${coordinates.lat}, ${coordinates.lon}`)
+				.on('mouseover', function (e) {
+					this.openPopup();
+				})
+				.on('mouseout', function (e) {
+					this.closePopup();
+				})
+				// make it clickable to open map detail
+				.on('click', function (e) {
+					window.open('../map?' + token_id);
+				}).addTo(map);
+		}
+	</script>
+	<p>Click on the circle to open map detail.</p>
+
+			</div>
+		</section>
+
+		<!-- Footer -->
+		<section id="footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-2">
+						<img src="https://sphaera.digital/theme/images/logo1.png" alt="" class="logo">
+					</div>
+					<div class="col-6 col-10-medium">
+						<section>
+							<h3>
+								sphaera.digital is a next-generation NFT combining digital art with real
+								world exploration
+							</h3>
+							<p>By minting tokens, you discover new parts of the planet for the community.</p>
+						</section>
+					</div>
+					<div class="col-4 col-12-medium">
+						<section>
+							<ul class="social">
+								<li>
+									<a class="icon brands fa-twitter" href="https://twitter.com/sphaeradigital">
+										<span class="label">Twitter</span>
+									</a>
+								</li>
+								<li>
+									<a class="icon brands fa-discord" target="_blank" rel="noreferrer"
+										href="https://discord.gg/RYHCK5Yp8G">
+										<span class="label">Discord</span>
+									</a>
+								</li>
+								<li>
+									<a class="icon brands fa-medium" target="_blank" rel="noreferrer"
+										href="https://sphaeradigital.medium.com/">
+										<span class="label">Medium</span>
+									</a>
+								</li>
+							</ul>
+						</section>
+					</div>
+
+					<div class="col-12">
+						<!-- Copyright -->
+						<div id="copyright">
+							<ul class="links">
+								<li>
+									sphaera.digital made by
+									<a href="https://twitter.com/sphaeradigital">The Wolfpack</a>
+								</li>
+								<li>
+									maps by <a href="https://www.openstreetmap.org">OpenStreetMap</a> contributors
+								</li>
+								<li>
+									<!--
+										Dopetrope by HTML5 UP
+										html5up.net | @ajlkn
+										Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+									-->
+									templates by <a href="http://html5up.net">HTML5 UP</a>
+									and <a href='https://www.freepik.com/psd/poster'>yeven_popov</a>
+								</li>
+							</ul>
+						</div>
+
+					</div>
+				</div>
+			</div>
+		</section>
+
+	</div>
+
+	<!-- Scripts -->
+	<script src="https://sphaera.digital/theme/js/jquery.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/jquery.dropotron.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/browser.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/breakpoints.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/util.js"></script>
+	<script src="https://sphaera.digital/theme/js/main.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+	<title>sphaera.digital</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+	<link rel="stylesheet" href="https://sphaera.digital/theme/css/main.css" />
+	<link rel="icon" type="image/png" href="https://sphaera.digital/theme/images/logo2.png" />
+</head>
+
+<body class="homepage is-preload">
+	<div id="page-wrapper">
+
+		<!-- Header -->
+		<section id="header">
+
+			<!-- Logo -->
+			<h1>
+				<a href="/">
+					<img src="https://sphaera.digital/theme/images/logo2.png" alt="">
+					sphaera.digital
+				</a>
+			</h1>
+
+			<!-- Nav -->
+			<nav id="nav">
+				<ul>
+					<li ><a href="/">Home</a></li>
+					<li ><a href="/about/">About</a></li>
+					<li ><a href="/mint/">Mint</a></li>
+					<li ><a href="/atlas/">Atlas</a></li>
+				</ul>
+			</nav>
+
+		</section>
+
+		<!-- Main -->
+		<section id="main">
+			<div class="container">
+
+<div class="atlas">
+	<div id="content">
+		Loading map&hellip;
+	</div>
+</div>
+
+<script>
+	const setError = (error) => {
+		document.getElementById('content').innerHTML = `<p class="error">${error}</p>`
+	}
+
+	const getAttributes = (metadata) => {
+		const result = {}
+		metadata.attributes.forEach((attribute) => {
+			result[attribute.trait_type] = attribute.value
+		})
+		return result
+	}
+
+	const paletteToRarity = (palette) => {
+		switch (palette) {
+			case 'Random':
+				return 'Legendary'
+			case 'Red':
+			case 'Green':
+			case 'Blue':
+				return 'Rare'
+			default:
+				return 'Common'
+		}
+	}
+
+	const getFlagEmoji = (countryCode) => {
+		const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt())
+		return String.fromCodePoint(...codePoints)
+	}
+
+	const thousandsSeparator = (x) => (
+		x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+	)
+
+
+	const main = async () => {
+		// Validate token ID
+		const tokenId = Number(window.location.search.slice(1))
+		if (!(tokenId >= 1 && tokenId <= 10000)) {
+			setError('Invalid map ID.')
+			return
+		}
+
+		// Get metadata
+		const metadataResponse = await fetch(`https://ipfs.io/ipfs/QmZ7UrtLepVfZZYphyzhLd9vnHebGregYJADzCjyxyua5a/${tokenId}`)
+		if (!metadataResponse.ok) {
+			setError('This map has not been minted yet.')
+			return
+		}
+		const metadata = await metadataResponse.json()
+
+		// Parse metadata
+		const attributes = getAttributes(metadata)
+		let imageURL
+		if (metadata.image.startsWith('ipfs://')) {
+			const cid = metadata.image.split('://')[1]
+			imageURL = `https://ipfs.io/ipfs/${cid}`
+		}
+		else {
+			imageURL = metadata.image
+		}
+		const [latitude, longitude] = attributes.Coordinates.split(', ', 2)
+		const flag = getFlagEmoji(attributes['Country Code'])
+		const rarity = paletteToRarity(attributes.Palette)
+		// Strip the first sentence because it only tends to repeat the location and color palette.
+		let shortDescription = metadata.description.replace(/^.+?\. ?/, '')
+		// Strip OSM copyright in Markdown format because we display it under the map.
+		shortDescription = shortDescription.replace(/\[OpenStreetMap.*$/, '')
+
+		// Render the document
+		const prefix = rarity === 'Common' ? 'Map' : `${rarity} map`
+		document.title += ` | ${prefix} #${tokenId} of ${attributes.Place}, ${attributes.Country}`
+		document.getElementById('content').innerHTML = `
+		<article class="box post">
+		<header>
+			<h2>
+				<img src="https://sphaera.digital/theme/images/logo2.png" />
+				${prefix} #${tokenId}
+			</h2>
+			<p>
+				${flag}
+				${attributes.Place}, ${attributes.Country}. ${shortDescription}
+			</p>
+		</header>
+		<div class="row">
+			<div class="col-7 col-12-small">
+				<section class="box map">
+					<div class="image featured">
+						<a href="${imageURL}" target="_blank" rel="noreferrer">
+							<img src="${imageURL}" alt="" />
+						</a>
+						<small>Map data provided by <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>.</small>
+					</div>
+				</section>
+			</div>
+			<div class="col-5 col-12-small attributes">
+				<table>
+					<tr>
+						<th>Palette</th>
+						<td>
+							<strong>${attributes.Palette}</strong>
+							&nbsp;
+							<span class="badge badge-${rarity.toLowerCase()}">${rarity}</span>
+						</td>
+					</tr>
+					<tr>
+						<th>Place</th>
+						<td>
+							<strong>${attributes.Place}</strong>
+						</td>
+					</tr>
+					<tr>
+						<th>Country</th>
+						<td>
+							<strong>${attributes.Country}</strong>
+							${flag}
+						</td>
+					</tr>
+					<tr>
+						<th>Coordinates</th>
+						<td>
+							<strong>${attributes.Coordinates}</strong>
+						</td>
+					</tr>
+					<tr>
+						<th>Borders</th>
+						<td>
+							<span style="text-align: center; display: inline-block">
+							<strong>${attributes.North}</strong>&nbsp;N <br>
+							<strong>${attributes.West}</strong>&nbsp;W
+							&nbsp;🧭&nbsp;
+							<strong>${attributes.East}</strong>&nbsp;E <br>
+							<strong>${attributes.South}</strong>&nbsp;S
+							</span>
+						</td>
+					</tr>
+					<tr>
+						<th>Buildings</th>
+						<td>
+							<strong>${thousandsSeparator(attributes.Buildings)}</strong>
+						</td>
+					</tr>
+					<tr>
+						<th>Infrastructure</th>
+						<td>
+							<strong>${thousandsSeparator(attributes['Roads [m]'])}&nbsp;m</strong> of&nbsp;roads <br>
+							<strong>${thousandsSeparator(attributes['Railways [m]'])}&nbsp;m</strong> of&nbsp;railways
+						</td>
+					</tr>
+					<tr>
+						<th>Nature</th>
+						<td>
+							<strong>${thousandsSeparator(attributes['Water [m^2]'])}&nbsp;m<sup>2</sup></strong> of&nbsp;water <br>
+							<strong>${thousandsSeparator(attributes['Green [m^2]'])}&nbsp;m<sup>2</sup></strong> of&nbsp;greenery <br>
+							<strong>${thousandsSeparator(attributes['Forest [m^2]'])}&nbsp;m<sup>2</sup></strong> of&nbsp;forests
+						</td>
+					</tr>
+				</table>
+				<p>
+					<a href="https://www.openstreetmap.org/#map=15/${latitude}/${longitude}"
+						target="_blank" rel="noreferrer" class="button small">
+						View on OpenStreetMap
+					</a>
+					<a href="https://opensea.io/assets/0x77c29AE92Ab41cb1e53B95259AFb9BDbcC2ecDB7/${tokenId}"
+						target="_blank" rel="noreferrer" class="button small alt">
+						View on OpenSea
+					</a>
+				</p>
+			</div>
+		</div>
+		<div id="wikipedia-results"></div>
+		</article>
+		`
+
+		// Optional: load results from Wikipedia
+		const wikipediaResponse = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${latitude}%7C${longitude}&gsradius=10000&gslimit=7&format=json&origin=*`)
+		if (wikipediaResponse.ok) {
+			const wikipediaResuts = await wikipediaResponse.json()
+			if (wikipediaResuts.query && wikipediaResuts.query.geosearch && wikipediaResuts.query.geosearch.length > 1) {
+				const links = wikipediaResuts.query.geosearch.map((result) => (
+					`<li>
+						<a href="http://en.wikipedia.org/?curid=${result.pageid}" target="_blank" rel="noreferrer">
+							${result.title}</a>
+						(${Math.round(result.dist)}&nbsp;m away)
+					</li>
+					`
+				))
+				document.getElementById('wikipedia-results').innerHTML = `
+				<header>
+					<h3>
+						<i class="icon solid fa-map-marker"></i>
+						Learn something about this place!
+					</h3>
+					<p>Top ${wikipediaResuts.query.geosearch.length} Wikipedia articles closest to this location</p>
+				</header>
+				<ul class="divided">
+					${links.join('')}
+				</ul>
+				`
+			}
+		}
+	}
+	main()
+</script>
+			</div>
+		</section>
+
+		<!-- Footer -->
+		<section id="footer">
+			<div class="container">
+				<div class="row">
+					<div class="col-2">
+						<img src="https://sphaera.digital/theme/images/logo1.png" alt="" class="logo">
+					</div>
+					<div class="col-6 col-10-medium">
+						<section>
+							<h3>
+								sphaera.digital is a next-generation NFT combining digital art with real
+								world exploration
+							</h3>
+							<p>By minting tokens, you discover new parts of the planet for the community.</p>
+						</section>
+					</div>
+					<div class="col-4 col-12-medium">
+						<section>
+							<ul class="social">
+								<li>
+									<a class="icon brands fa-twitter" href="https://twitter.com/sphaeradigital">
+										<span class="label">Twitter</span>
+									</a>
+								</li>
+								<li>
+									<a class="icon brands fa-discord" target="_blank" rel="noreferrer"
+										href="https://discord.gg/RYHCK5Yp8G">
+										<span class="label">Discord</span>
+									</a>
+								</li>
+								<li>
+									<a class="icon brands fa-medium" target="_blank" rel="noreferrer"
+										href="https://sphaeradigital.medium.com/">
+										<span class="label">Medium</span>
+									</a>
+								</li>
+							</ul>
+						</section>
+					</div>
+
+					<div class="col-12">
+						<!-- Copyright -->
+						<div id="copyright">
+							<ul class="links">
+								<li>
+									sphaera.digital made by
+									<a href="https://twitter.com/sphaeradigital">The Wolfpack</a>
+								</li>
+								<li>
+									maps by <a href="https://www.openstreetmap.org">OpenStreetMap</a> contributors
+								</li>
+								<li>
+									<!--
+										Dopetrope by HTML5 UP
+										html5up.net | @ajlkn
+										Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+									-->
+									templates by <a href="http://html5up.net">HTML5 UP</a>
+									and <a href='https://www.freepik.com/psd/poster'>yeven_popov</a>
+								</li>
+							</ul>
+						</div>
+
+					</div>
+				</div>
+			</div>
+		</section>
+
+	</div>
+
+	<!-- Scripts -->
+	<script src="https://sphaera.digital/theme/js/jquery.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/jquery.dropotron.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/browser.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/breakpoints.min.js"></script>
+	<script src="https://sphaera.digital/theme/js/util.js"></script>
+	<script src="https://sphaera.digital/theme/js/main.js"></script>
+
+</body>
+
+</html>
